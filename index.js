@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-
+const https = require('https');
 
 const app = express();
 app.use(cors());
@@ -17,10 +17,43 @@ const io = new Server(server, {
   },
 });
 
-
 // Store active users
 const users = {};
 
+// Endpoint to fetch ICE servers from Xirsys
+app.get('/ice-servers', (req, res) => {
+  const o = {
+    format: "urls"
+  };
+
+  const bodyString = JSON.stringify(o);
+  const options = {
+    host: "global.xirsys.net",
+    path: "/_turn/VideoCalling",
+    method: "PUT",
+    headers: {
+      "Authorization": "Basic " + Buffer.from("rsaifee1019:31d6ea32-070f-11f0-9b5a-0242ac150002").toString("base64"),
+      "Content-Type": "application/json",
+      "Content-Length": bodyString.length
+    }
+  };
+
+  const httpreq = https.request(options, (httpres) => {
+    let str = "";
+    httpres.on("data", (data) => { str += data; });
+    httpres.on("error", (e) => { console.log("error: ", e); });
+    httpres.on("end", () => {
+      console.log("ICE List: ", str);
+      res.json(JSON.parse(str)); // Send the ICE server list to the frontend
+    });
+  });
+
+  httpreq.on("error", (e) => { console.log("request error: ", e); });
+  httpreq.write(bodyString);
+  httpreq.end();
+});
+
+// Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -61,7 +94,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  
   // Handle call acceptance
   socket.on('call-accepted', ({ to }) => {
     console.log('Call accepted by:', to); // Log the target user
@@ -81,6 +113,7 @@ io.on('connection', (socket) => {
     }
   });
 });
+
 const PORT = process.env.PORT || 3000; // Use Render's default port
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

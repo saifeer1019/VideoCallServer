@@ -5,15 +5,20 @@ const cors = require('cors');
 const { PeerServer } = require('peer');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Replace with your frontend URL
+  methods: ['GET', 'POST'],
+  credentials: true,
+}));
 
 const server = http.createServer(app);
 
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: 'http://localhost:5173', // Replace with your frontend URL
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 

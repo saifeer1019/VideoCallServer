@@ -1,12 +1,13 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const { PeerServer } = require('peer');
 
 const app = express();
+
+
+
 app.use(cors({
-  origin: 'http://localhost:5173', // Replace with your frontend URL
+  origin: '*', // Replace with your frontend URL
   methods: ['GET', 'POST'],
   credentials: true,
 }));
@@ -16,15 +17,21 @@ const server = http.createServer(app);
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173', // Replace with your frontend URL
+    origin: '*', // Replace with your frontend URL
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
-// Create PeerJS server on the same port
-const peerServer = PeerServer({ port: 5000, path: '/myapp' }); // Use the same port as the backend
-console.log('PeerServer running on port 5000');
+// Create PeerJS server on port 5000
+const peerServer = PeerServer({ port: 5000, path: '/myapp' });
+console.log('PeerJS server running on port 5000');
+
+// Proxy requests to /myapp to the PeerJS server
+app.use('/myapp', createProxyMiddleware({ 
+  target: 'http://localhost:5000', 
+  changeOrigin: true,
+}));
 
 // Store active users
 const users = {};

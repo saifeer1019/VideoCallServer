@@ -1,42 +1,22 @@
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const { PeerServer } = require('peer');
-const cors = require('cors');
-const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
-//sfdd
+const cors = require('cors');
 
 
-
-
-
-app.use(cors({
-  origin: '*', // Replace with your frontend URL
-  methods: ['GET', 'POST'],
-  credentials: true,
-}));
+const app = express();
+app.use(cors());
 
 const server = http.createServer(app);
 
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: '*', // Replace with your frontend URL
+    origin: '*',
     methods: ['GET', 'POST'],
-    credentials: true,
   },
 });
 
-// Create PeerJS server on port 5000
-const peerServer = PeerServer({ port: 5000, path: '/myapp' });
-console.log('PeerJS server running on port 5000');
-
-// Proxy requests to /myapp to the PeerJS server
-app.use('/myapp', createProxyMiddleware({ 
-  target: 'http://localhost:5000', 
-  changeOrigin: true,
-}));
 
 // Store active users
 const users = {};
@@ -70,6 +50,27 @@ io.on('connection', (socket) => {
     socket.emit('connected-users', connectedUsers);
   });
 
+  // Handle call notifications
+  socket.on('calling', ({ to }) => {
+    console.log('Calling user:', to); // Log the target user
+    const targetSocketId = users[to]?.socketId;
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('incoming-call', {
+        from: socket.userId,
+      });
+    }
+  });
+
+  
+  // Handle call acceptance
+  socket.on('call-accepted', ({ to }) => {
+    console.log('Call accepted by:', to); // Log the target user
+    const targetSocketId = users[to]?.socketId;
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-answered');
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     const userId = socket.userId;
@@ -80,7 +81,6 @@ io.on('connection', (socket) => {
     }
   });
 });
-
 const PORT = process.env.PORT || 3000; // Use Render's default port
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

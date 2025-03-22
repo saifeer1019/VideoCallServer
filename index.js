@@ -1,52 +1,70 @@
-const express = require('express')
-const app = express()
-const http = require('http')
-const cors = require('cors')
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+const { PeerServer } = require('peer');
 
+const app = express();
+app.use(cors());
 
+const server = http.createServer(app);
 
-
-const {Server} = require('socket.io')
-app.use(cors())
-const server = http.createServer(app)
+// Create Socket.IO server
 const io = new Server(server, {
-    cors : {
-        origin: "*",
-        methods: ['GET', 'POST']
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
+
+// Create PeerJS server on the same port
+const peerServer = PeerServer({ port: 10000, path: '/myapp' }); // Use the same port as the backend
+console.log('PeerServer running on port 10000');
+
+// Store active users
+const users = {};
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Register new user
+  socket.on('register', ({ userId, peerId }) => {
+    console.log('User registered:', userId, 'with peerId:', peerId);
+    users[userId] = {
+      socketId: socket.id,
+      peerId: peerId,
+    };
+    socket.userId = userId;
+
+    // Notify other users about new user
+    socket.broadcast.emit('user-connected', {
+      userId,
+      peerId,
+    });
+
+    // Send list of connected users to the new user
+    const connectedUsers = Object.entries(users)
+      .filter(([id]) => id !== userId)
+      .map(([id, data]) => ({
+        userId: id,
+        peerId: data.peerId,
+      }));
+
+    socket.emit('connected-users', connectedUsers);
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    const userId = socket.userId;
+    if (userId) {
+      delete users[userId];
+      io.emit('user-disconnected', userId);
+      console.log('User disconnected:', userId);
     }
-})
-const socket = io
+  });
+});
 
-
-io.on("connection", (socket)=>{
-    socket.emit('me', socket.id)
-    console.log("connected", socket.id);
-    socket.on('join_room', (z)=> {
-        socket.join(z)
-        console.log('socket', z)
-    })
-
-    socket.on('sendMessage', (z)=> {
-      
-        console.log('socket', z)
-    })
-
-    socket.on('disconnect', ()=>{
-        
-       socket.broadcast.emit('call ended')
-    })
-
-    socket.on('callUser', ({userToCall, signalData, from, name, }) =>{
-        io.to(userToCall).emit('calluser', {signal: signalData, from, name})
-        socket.broadcast.emit('call ended')
-     })
-
-     socket.on('answercall', (data)=>{
-        io.to(data.to).emit('callAccepted', data.signal)
-     })
-})
-
-
-server.listen(3000, ()=>{
-    console.log('server run')
-})
+const PORT = process.env.PORT || 10000; // Use Render's default port
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

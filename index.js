@@ -18,8 +18,8 @@ const io = new Server(server, {
 });
 
 // Create PeerJS server on the same port
-const peerServer = PeerServer({ port: 10000, path: '/myapp' }); // Use the same port as the backend
-console.log('PeerServer running on port 10000');
+const peerServer = PeerServer({ port: 5000, path: '/myapp' }); // Use the same port as the backend
+console.log('PeerServer running on port 5000');
 
 // Store active users
 const users = {};
@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 10000; // Use Render's default port
+const PORT = process.env.PORT || 3000; // Use Render's default port
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

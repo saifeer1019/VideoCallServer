@@ -1,7 +1,7 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const { PeerServer } = require('peer');
-
+const cors = require('cors');
 const app = express();
 
 

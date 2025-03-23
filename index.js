@@ -21,37 +21,37 @@ const io = new Server(server, {
 const users = {};
 
 // Endpoint to fetch ICE servers from Xirsys
-app.get('/ice-servers', (req, res) => {
-  const o = {
-    format: "urls"
-  };
+// app.get('/ice-servers', (req, res) => {
+//   const o = {
+//     format: "urls"
+//   };
 
-  const bodyString = JSON.stringify(o);
-  const options = {
-    host: "global.xirsys.net",
-    path: "/_turn/VideoCalling",
-    method: "PUT",
-    headers: {
-      "Authorization": "Basic " + Buffer.from("rsaifee1019:31d6ea32-070f-11f0-9b5a-0242ac150002").toString("base64"),
-      "Content-Type": "application/json",
-      "Content-Length": bodyString.length
-    }
-  };
+//   const bodyString = JSON.stringify(o);
+//   const options = {
+//     host: "global.xirsys.net",
+//     path: "/_turn/VideoCalling",
+//     method: "PUT",
+//     headers: {
+//       "Authorization": "Basic " + Buffer.from("rsaifee1019:31d6ea32-070f-11f0-9b5a-0242ac150002").toString("base64"),
+//       "Content-Type": "application/json",
+//       "Content-Length": bodyString.length
+//     }
+//   };
 
-  const httpreq = https.request(options, (httpres) => {
-    let str = "";
-    httpres.on("data", (data) => { str += data; });
-    httpres.on("error", (e) => { console.log("error: ", e); });
-    httpres.on("end", () => {
-      console.log("ICE List: ", str);
-      res.json(JSON.parse(str)); // Send the ICE server list to the frontend
-    });
-  });
+//   const httpreq = https.request(options, (httpres) => {
+//     let str = "";
+//     httpres.on("data", (data) => { str += data; });
+//     httpres.on("error", (e) => { console.log("error: ", e); });
+//     httpres.on("end", () => {
+//       console.log("ICE List: ", str);
+//       res.json(JSON.parse(str)); // Send the ICE server list to the frontend
+//     });
+//   });
 
-  httpreq.on("error", (e) => { console.log("request error: ", e); });
-  httpreq.write(bodyString);
-  httpreq.end();
-});
+//   httpreq.on("error", (e) => { console.log("request error: ", e); });
+//   httpreq.write(bodyString);
+//   httpreq.end();
+// });
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
